@@ -1,82 +1,67 @@
-// Importar dependencias
 import express from 'express';
-import cors from 'cors';
-import { sequelize, EmpresaA, KpiA, TaskA, EmpresaB, KpiB, TaskB } from './database.js';
+import Sequelize from 'sequelize';
 
-// Crear aplicación de Express
 const app = express();
 
-// Habilitar CORS
-app.use(cors({
-  origin: 'http://localhost:3000', // Cambia esto por el origen de tu frontend
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-  credentials: true,
-}));
+const sequelize = new Sequelize('postgres', 'postgres', 'arielconstruex2024', {
+  host: 'localhost',
+  dialect: 'postgres',
+  port: 5432,
+  define: {
+    timestamps: false, // Evitar que Sequelize agregue timestamps automáticamente
+  },
+});
 
-// Rutas de Express para empresa_a
-app.get('/empresa_a/users', async (_req, res) => {
+// Definir el modelo para la tabla empresas
+const Empresa = sequelize.define('empresas', {
+  id: {
+    type: Sequelize.INTEGER,
+    primaryKey: true,
+  },
+  nombre: Sequelize.STRING,
+  esquema_id: Sequelize.INTEGER,
+});
+
+// Sincronizar el modelo con la base de datos
+sequelize.sync()
+  .then(() => {
+    console.log('Base de datos conectada y modelos sincronizados.');
+  })
+  .catch(err => {
+    console.error('Error al sincronizar la base de datos:', err);
+  });
+
+// Ruta para obtener el nombre del esquema según el id
+app.get('/api/esquema-nombre/:id', async (req, res) => {
+  const id = req.params.id;
+
   try {
-    const users = await EmpresaA.findAll();
-    return res.json(users);
+    const result = await Empresa.findOne({
+      attributes: [
+        [sequelize.literal(`CASE esquema_id
+                             WHEN 1 THEN 'empresa_a'
+                             WHEN 2 THEN 'empresa_b'
+                             ELSE 'Esquema no encontrado'
+                          END`), 'esquema_nombre'],
+      ],
+      where: {
+        id: id,
+      },
+    });
+
+    if (!result) {
+      return res.status(404).json({ error: 'Registro no encontrado' });
+    }
+
+    res.json(result);
   } catch (error) {
-    console.error('Error al obtener usuarios de empresa_a:', error);
-    return res.status(500).json({ error: 'Error interno del servidor' });
+    console.error('Error al consultar la base de datos:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
-app.get('/empresa_a/kpis', async (_req, res) => {
-  try {
-    const kpis = await KpiA.findAll();
-    return res.json(kpis);
-  } catch (error) {
-    console.error('Error al obtener KPIs de empresa_a:', error);
-    return res.status(500).json({ error: 'Error interno del servidor' });
-  }
-});
-
-app.get('/empresa_a/tasks', async (_req, res) => {
-  try {
-    const tasks = await TaskA.findAll();
-    return res.json(tasks);
-  } catch (error) {
-    console.error('Error al obtener tareas de empresa_a:', error);
-    return res.status(500).json({ error: 'Error interno del servidor' });
-  }
-});
-
-// Rutas de Express para empresa_b (similar estructura)
-app.get('/empresa_b/users', async (_req, res) => {
-  try {
-    const users = await EmpresaB.findAll();
-    return res.json(users);
-  } catch (error) {
-    console.error('Error al obtener usuarios de empresa_b:', error);
-    return res.status(500).json({ error: 'Error interno del servidor' });
-  }
-});
-
-app.get('/empresa_b/kpis', async (_req, res) => {
-  try {
-    const kpis = await KpiB.findAll();
-    return res.json(kpis);
-  } catch (error) {
-    console.error('Error al obtener KPIs de empresa_b:', error);
-    return res.status(500).json({ error: 'Error interno del servidor' });
-  }
-});
-
-app.get('/empresa_b/tasks', async (_req, res) => {
-  try {
-    const tasks = await TaskB.findAll();
-    return res.json(tasks);
-  } catch (error) {
-    console.error('Error al obtener tareas de empresa_b:', error);
-    return res.status(500).json({ error: 'Error interno del servidor' });
-  }
-});
-
-// Iniciar el servidor
-const PORT = 3001;
+// Iniciar el servidor Express
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Servidor Express iniciado en el puerto ${PORT}`);
 });
