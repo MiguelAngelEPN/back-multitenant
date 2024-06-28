@@ -11,6 +11,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@nestjs/common": "^10.3.9",
+    "@nestjs/platform-express": "^10.3.9",
     "express": "^4.19.2",
     "mongoose": "^8.4.4"
   },
