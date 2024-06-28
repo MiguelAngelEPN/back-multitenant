@@ -1,67 +1,57 @@
+// Importar dependencias
 import express from 'express';
-import Sequelize from 'sequelize';
+import cors from 'cors';
+import pg from 'pg'; // Importa el módulo pg como CommonJS
 
+// Desestructura Pool del objeto importado
+const { Pool } = pg;
+
+// Configuración de conexión a PostgreSQL
+const pool = new Pool({
+  user: 'postgres',
+  host: 'localhost',
+  database: 'postgres',
+  password: 'arielconstruex2024',
+  port: 5432, // Puerto por defecto de PostgreSQL
+});
+
+// Crear aplicación de Express
 const app = express();
 
-const sequelize = new Sequelize('postgres', 'postgres', 'arielconstruex2024', {
-  host: 'localhost',
-  dialect: 'postgres',
-  port: 5432,
-  define: {
-    timestamps: false, // Evitar que Sequelize agregue timestamps automáticamente
-  },
-});
+// Middleware CORS
+app.use(cors({
+  origin: 'http://localhost:3000', // Cambia esto por el origen de tu frontend
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+  credentials: true,
+}));
 
-// Definir el modelo para la tabla empresas
-const Empresa = sequelize.define('empresas', {
-  id: {
-    type: Sequelize.INTEGER,
-    primaryKey: true,
-  },
-  nombre: Sequelize.STRING,
-  esquema_id: Sequelize.INTEGER,
-});
-
-// Sincronizar el modelo con la base de datos
-sequelize.sync()
-  .then(() => {
-    console.log('Base de datos conectada y modelos sincronizados.');
-  })
-  .catch(err => {
-    console.error('Error al sincronizar la base de datos:', err);
-  });
-
-// Ruta para obtener el nombre del esquema según el id
-app.get('/api/esquema-nombre/:id', async (req, res) => {
-  const id = req.params.id;
-
+// Rutas de Express
+app.get('/empresa_a/users', async (_req, res) => {
   try {
-    const result = await Empresa.findOne({
-      attributes: [
-        [sequelize.literal(`CASE esquema_id
-                             WHEN 1 THEN 'empresa_a'
-                             WHEN 2 THEN 'empresa_b'
-                             ELSE 'Esquema no encontrado'
-                          END`), 'esquema_nombre'],
-      ],
-      where: {
-        id: id,
-      },
-    });
-
-    if (!result) {
-      return res.status(404).json({ error: 'Registro no encontrado' });
-    }
-
-    res.json(result);
+    const client = await pool.connect();
+    const result = await client.query('SELECT * FROM empresa_a.users');
+    client.release();
+    res.json(result.rows);
   } catch (error) {
-    console.error('Error al consultar la base de datos:', error);
+    console.error('Error al obtener usuarios de empresa A:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
-// Iniciar el servidor Express
-const PORT = process.env.PORT || 3001;
+app.get('/empresa_b/users', async (_req, res) => {
+  try {
+    const client = await pool.connect();
+    const result = await client.query('SELECT * FROM empresa_b.users');
+    client.release();
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error al obtener usuarios de empresa B:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Iniciar el servidor
+const PORT = 3001;
 app.listen(PORT, () => {
   console.log(`Servidor Express iniciado en el puerto ${PORT}`);
 });
