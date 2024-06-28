@@ -1,15 +1,7 @@
 // Importar dependencias
 import express from 'express';
-import mongoose from 'mongoose';
 import cors from 'cors';
-
-// Crear esquema de Mongoose
-const animalSchema = new mongoose.Schema({
-  tipo: String,
-  estado: String,
-});
-
-const Animal = mongoose.model('Animal', animalSchema);
+import { sequelize, EmpresaA, KpiA, TaskA, EmpresaB, KpiB, TaskB } from './database.js';
 
 // Crear aplicación de Express
 const app = express();
@@ -21,26 +13,70 @@ app.use(cors({
   credentials: true,
 }));
 
-// Conectar a MongoDB
-mongoose.connect('mongodb://migue:password@localhost:27017/miapp?authSource=admin', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
+// Rutas de Express para empresa_a
+app.get('/empresa_a/users', async (_req, res) => {
+  try {
+    const users = await EmpresaA.findAll();
+    return res.json(users);
+  } catch (error) {
+    console.error('Error al obtener usuarios de empresa_a:', error);
+    return res.status(500).json({ error: 'Error interno del servidor' });
+  }
 });
 
-// Rutas de Express
-app.get('/', async (_req, res) => {
-  console.log('listando... chanchitos...');
-  const animales = await Animal.find();
-  return res.send(animales);
+app.get('/empresa_a/kpis', async (_req, res) => {
+  try {
+    const kpis = await KpiA.findAll();
+    return res.json(kpis);
+  } catch (error) {
+    console.error('Error al obtener KPIs de empresa_a:', error);
+    return res.status(500).json({ error: 'Error interno del servidor' });
+  }
 });
 
-app.get('/crear', async (_req, res) => {
-  console.log('creando...');
-  await Animal.create({ tipo: 'Chanchito', estado: 'Feliz' });
-  return res.send('ok');
+app.get('/empresa_a/tasks', async (_req, res) => {
+  try {
+    const tasks = await TaskA.findAll();
+    return res.json(tasks);
+  } catch (error) {
+    console.error('Error al obtener tareas de empresa_a:', error);
+    return res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Rutas de Express para empresa_b (similar estructura)
+app.get('/empresa_b/users', async (_req, res) => {
+  try {
+    const users = await EmpresaB.findAll();
+    return res.json(users);
+  } catch (error) {
+    console.error('Error al obtener usuarios de empresa_b:', error);
+    return res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.get('/empresa_b/kpis', async (_req, res) => {
+  try {
+    const kpis = await KpiB.findAll();
+    return res.json(kpis);
+  } catch (error) {
+    console.error('Error al obtener KPIs de empresa_b:', error);
+    return res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.get('/empresa_b/tasks', async (_req, res) => {
+  try {
+    const tasks = await TaskB.findAll();
+    return res.json(tasks);
+  } catch (error) {
+    console.error('Error al obtener tareas de empresa_b:', error);
+    return res.status(500).json({ error: 'Error interno del servidor' });
+  }
 });
 
 // Iniciar el servidor
-app.listen(3001, () => {
-  console.log('listening...');
+const PORT = 3001;
+app.listen(PORT, () => {
+  console.log(`Servidor Express iniciado en el puerto ${PORT}`);
 });
